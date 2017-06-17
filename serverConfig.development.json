@@ -1,0 +1,12 @@
+{
+	"http": {
+		"port": 8000
+	},
+	"ws": {
+		"port": 8888
+	},
+	"defaultBufferSize": 5,
+	"env": {
+		"NODE_ENV": "development"
+	}
+}
