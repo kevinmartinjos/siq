@@ -45,10 +45,8 @@ var Queue = function(name, bufferSize){
 			connection: ws
 		});
 
-		console.log(_isFull());
 		/*When queue is full and the first subscriber connects*/
 		if(_isFull()){
-			console.log("queue is full");
 			_flush()
 		}
 		return consumerId;
