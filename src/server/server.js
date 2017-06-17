@@ -49,7 +49,8 @@ function addMessage(ws, data){
 		var payload = {
 			topic: "ID",
 			id: id,
-			ackId: data.ackId
+			ackId: data.ackId,
+			producerId: data.producerId
 		};
 		ws.send(serialize(payload));
 	}
@@ -57,7 +58,8 @@ function addMessage(ws, data){
 		var payload = {
 			topic: "ERROR",
 			ackId: data.ackId,
-			error: e
+			error: e,
+			producerId: data.producerId
 		};
 		logger.error(e);
 		ws.send(serialize(payload));
@@ -109,8 +111,3 @@ wsServer.on('connection', (ws) => {
 
 logger.info('Websocket server running at ' + nconf.get('ws:port'));
 
-
-/*
-	Initialize the message broker
-*/
-module.exports = app;

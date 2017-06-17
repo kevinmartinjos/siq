@@ -64,11 +64,11 @@ describe('client', () => {
 		it("should get a correlation id after enqueue", (done) => {
 			siqConnection.then((siq) => {
 				var producer = siq.createProducer();
-				var correlationPromise = producer.produce('q1', 'message1');
-				correlationPromise.then((id) => {
+				var callback = (id) => {
 					assert.isNotNull(id);
 					done();	
-				});	
+				}
+				producer.produce('q1', 'message1', callback);
 			});
 		});
 
@@ -83,13 +83,13 @@ describe('client', () => {
 				producer.produce('q1', 'message4');
 				producer.produce('q1', 'message5');
 
-
-				//the last message would cause an overflow, and no id would be returned
-				producer.produce('q1', 'overflow message').then(() => {
-					done(new Error("expected method to reject"));
-				}).catch((e) => {
+				var errCallback = (error) => {
+					console.log("error");
 					done();
-				}).catch(done);
+				};
+
+				//the last message would cause an overflow, and it would throw an error
+				producer.produce('q1', 'overflow message', null, errCallback);
 			});
 			
 		});
@@ -128,10 +128,11 @@ describe('client', () => {
 		it("should have deleted the data in queue on flush", (done) => {
 			siqConnection.then((siq) => {
 				var producer = siq.createProducer();
-				producer.produce('q1', 'after flush').then((id) => {
+				var callback = (id) => {
 					assert.isString(id)
 					done();
-				});
+				}
+				producer.produce('q1', 'after flush', callback);
 			})
 		});
 	});

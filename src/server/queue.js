@@ -45,34 +45,45 @@ var Queue = function(name, bufferSize){
 			connection: ws
 		});
 
+		console.log(_isFull());
 		/*When queue is full and the first subscriber connects*/
-		if(_isFull())
+		if(_isFull()){
+			console.log("queue is full");
 			_flush()
+		}
 		return consumerId;
 	};
 
 	function _flush(){
 		logger.info("flushing queue: " + self.name);
-		logger.info("subscribers: " + self.subscribers.length);
+		
+		//clean dead subscribers
+		var aliveSubscribers = self.subscribers.filter((subscriber) => {
+			return subscriber.connection.readyState === 1;
+		});
+
+		self.subscribers = aliveSubscribers;
+
 		self.subscribers.forEach((subscriber) => {
 			var payload = {
 				topic: "SUBSCRIPTION_MSG",
 				consumerId: subscriber.consumerId,
 				messageList: self.data
 			};
-			subscriber.connection.send(serialize(payload));
+			if(subscriber.connection.readyState === 1){
+				subscriber.connection.send(serialize(payload));
+			}
 		});
 	};
 
 	function _clear(){
-		console.log("clearing");
 		self.data = [];
 		self.acks = [];
 	}
 
 	function _acknowledgeMessage(consumerId){
 		self.acks.push(consumerId);
-		if(self.acks.length === self.subscribers.length && self.acks.length > 0){
+		if(self.acks.length === self.subscribers.length && _isFull()){
 			_clear();
 		}
 	}

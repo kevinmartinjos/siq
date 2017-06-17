@@ -1,4 +1,5 @@
 let WebSocketClient = require('ws');
+let uuid = require('uuid/v4');
 let Utils = require('../utils');
 var logger = Utils.logger;
 var isNullOrEmpty = Utils.isNullOrEmpty;
@@ -8,49 +9,60 @@ function Producer(connection){
 	var self = this;
 	this.messageCount = 0;
 	this.pendingAcknowledgement = {};
+	this.callbacks = {};
+	this.errCallbacks = {};
+	this.producerId = uuid();
 
-	function Transaction(ackId, connection){
-		var transactionSelf = this;
-		this.ackId = ackId;
-		this.connection = connection;
-		return new Promise((resolve, reject) => {
-			connection.on('message', (data) => {
-				data = JSON.parse(data);
+	connection.on('message', (data) => {
+		data = JSON.parse(data);
+		if(data.topic === "ID"){
+			var ackId = data.ackId;
+			var callback;
 
-				if(data.topic === "ID"){
-					var ackId = data.ackId;
-					if(ackId === transactionSelf.ackId){
-						resolve(data.id);
-					}
-				}
-				else if(data.topic === "ERROR"){
-					logger.debug("Transaction:" + serialize(data.error));
-					if(data.ackId === transactionSelf.ackId){
-						reject(data.error);
-					}
-				}
-			});	
-		});
-	}
+			if(!isNullOrEmpty(self.callbacks[ackId]))
+				callback = self.callbacks[ackId].callback;
+			if(typeof callback === "function" && data.producerId === self.producerId)
+				callback(data.id);
+			
+		}
+		else if(data.topic === "ERROR"){
+			logger.debug("ERROR:" + serialize(data));
+
+			var errCallback;
+			if(self.errCallbacks[data.ackId] !== undefined)
+				errCallback = self.errCallbacks[data.ackId].errCallback;
+			if(typeof errCallback === "function" && data.producerId === self.producerId){
+				errCallback(data);
+			}
+		}
+	});	
+
 
 	return {
-		produce: function(queue, message){
+		produce: function(queue, message, callback, errCallback){
 			var ackId = self.messageCount++;
 			var payload = {
 				topic: 'ADD',
 				queue: queue,
 				message: message,
-				ackId: ackId
+				ackId: ackId,
+				producerId: self.producerId
+			};
+
+			/*
+				Save both callbacks to be invoked on a message reception
+			*/
+			self.callbacks[ackId] = {
+				ackId: ackId,
+				callback: callback
+			};
+
+			self.errCallbacks[ackId] = {
+				ackId: ackId,
+				errCallback: errCallback
 			};
 
 			connection.send(JSON.stringify(payload));
-			var transaction = new Transaction(ackId, connection);
-			/*
-				We have 'produced' the message. Now we need to handle whatever
-				acknowledgement the server sends us back
-			*/
-			return transaction;
-			
 		}
 
 	}

@@ -12,17 +12,17 @@ function Consumer(connection, qName, callback){
 
 	this.connection.on('message', (data) => {
 		data = JSON.parse(data);
+		var payload = {
+			topic: "MSG_ACK",
+			consumerId: self.consumerId,
+			queue: self.qName
+		};
+
 		if(data.topic === 'SUBSCRIPTION_MSG' && data.consumerId === self.consumerId){
+			self.connection.send(serialize(payload));
 			if(typeof self.callback === "function"){
 				self.callback(data.messageList);
 			}
-			var payload = {
-				topic: "MSG_ACK",
-				consumerId: self.consumerId,
-				queue: self.qName
-			};
-
-			self.connection.send(serialize(payload));
 		}
 	});
 
