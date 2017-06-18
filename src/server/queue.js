@@ -1,4 +1,5 @@
 let Utils = require('../utils');
+let DB = require('./db');
 
 var serialize = Utils.serialize;
 var isNullOrEmpty = Utils.isNullOrEmpty;
@@ -53,6 +54,14 @@ var Queue = function(name, bufferSize){
 	};
 
 	function _flush(){
+		/*
+			TODO:
+
+			Move the subscriber.connection.send to MessageBroker through a callback.
+			The queue should not be responsible for sending messages to websocket connections
+			The queue should inform the MessageBroker that it is ready to be flushed and the 
+			MessageBroker should be handlng all the subsequent logic.
+		*/
 		logger.info("flushing queue: " + self.name);
 		
 		//clean dead subscribers
@@ -77,6 +86,11 @@ var Queue = function(name, bufferSize){
 	function _clear(){
 		self.data = [];
 		self.acks = [];
+
+		/*TODO: This DB call should be moved to MessageBroker.js*/
+		DB.deleteAllFrom(self.name, (err) => {
+			logger.error(err);
+		});
 	}
 
 	function _acknowledgeMessage(consumerId){

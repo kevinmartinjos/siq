@@ -38,6 +38,11 @@ siqConnection.then((siq) => {
 		console.log("gondor created");
 	});
 
+	/*
+		Fill the queues.
+		Assuming buffer size is 5
+		You can change the buffer size in serverConfig.development.json
+	*/
 	producer.produce('mordor', 'message1');
 	producer.produce('mordor', 'message2');
 	producer.produce('mordor', 'message3');

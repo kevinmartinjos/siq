@@ -2,6 +2,7 @@ let chai = require('chai');
 let chaiHttp = require('chai-http');
 let WebSocketClient = require('ws');
 let nconf = require('nconf');
+let server = require('../src/server/server');
 let should = chai.should();
 let expect = chai.expect;
 let assert = chai.assert;
@@ -16,16 +17,15 @@ describe('Server', () => {
 		done();
 	});
 
-	// describe('/GET', () => {
-	// 	it("should load the welcome message", (done) => {
-	// 		chai.request(server).get('/').end((err, res) => {
-	// 			res.should.have.status(200);
-	// 			res.body.should.be.a('object');
-	// 			res.body.message.should.equal("Welcome to SIQ!");
-	// 			done();
-	// 		})
-	// 	});
-	// });
+	describe('/GET', () => {
+		it("should load queue map", (done) => {
+			chai.request(server).get('/').end((err, res) => {
+				res.should.have.status(200);
+				res.body.should.be.a('array');
+				done();
+			})
+		});
+	});
 
 	describe('Websockets', () => {
 		it("server should be up and running", (done) => {		

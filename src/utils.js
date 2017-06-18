@@ -22,7 +22,11 @@ var Utils = (function(){
 				return true;
 			return false;
 		},
-		logger: winston,
+		logger: new (winston.Logger)({
+				transports: [
+					new (winston.transports.File)({filename: 'log.text'})
+				]
+			}),
 		serialize: function(value){
 			var serial;
 			if(typeof value === "object")

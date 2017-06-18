@@ -6,6 +6,7 @@ let nconf = require('nconf');
 let WebSocketServer = require('ws').Server;
 let Util = require('../utils');
 let MessageBroker = require('./messageBroker');
+let DB = require('./db');
 
 var logger = Util.logger;
 var serialize = Util.serialize;
@@ -46,6 +47,8 @@ function addMessage(ws, data){
 	try{
 				
 		var id = MessageBroker.add(data.queue, data.message);
+		
+		/*Let the producer know that the message was enqueued, by sending the producer the message id*/
 		var payload = {
 			topic: "ID",
 			id: id,
@@ -69,6 +72,7 @@ function addMessage(ws, data){
 function subscribe(ws, data){
 	try{
 		var id = MessageBroker.subscribe(ws, data.queue, data.consumerId);
+		/*Let the consumer know that subscription was successful*/
 		var payload = {
 			topic: "SUBSCRIPTION_ACK",
 			consumerId: id
@@ -90,24 +94,33 @@ function acknowledgeMessage(ws, data){
 	MessageBroker.acknowledgeMessage(data.queue, data.consumerId);
 };
 
-wsServer.on('connection', (ws) => {
-	logger.debug('websocket connection accepted');
-	ws.on('message', (data) => {
-		data = JSON.parse(data);
-		/*TODO: Enumerate all the topics somewhere in a file*/
-		switch(data.topic){
-			case 'ADD':
-				addMessage(ws, data);			
-				break;
-			case 'SUBSCRIBE':
-				subscribe(ws, data);
-				break;
-			case 'MSG_ACK':
-				acknowledgeMessage(ws, data);
-				break;
-		}
-	})
-});
+/*
+	Load persisted messages into the MessageBroker from the DB
+*/
+MessageBroker.load(() => {
+	wsServer.on('connection', (ws) => {
+		logger.debug('websocket connection accepted');
+		ws.on('message', (data) => {
+			data = JSON.parse(data);
+			/*TODO: Enumerate all the topics somewhere in a file*/
+			switch(data.topic){
+				/*Producer wants to add a message to a queue*/
+				case 'ADD':
+					addMessage(ws, data);			
+					break;
+				/*Consumer wants to subscribe to a queue*/
+				case 'SUBSCRIBE':
+					subscribe(ws, data);
+					break;
+				/*Consumer acknowledging a queue flush*/
+				case 'MSG_ACK':
+					acknowledgeMessage(ws, data);
+					break;
+			}
+		})
+	});	
+})
 
 logger.info('Websocket server running at ' + nconf.get('ws:port'));
 
+module.exports = httpServer;
