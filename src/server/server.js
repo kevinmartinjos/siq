@@ -1,7 +1,6 @@
 let http = require('http');
 let express = require('express');
 let app = express();
-let bodyParser = require('body-parser');
 let nconf = require('nconf');
 let WebSocketServer = require('ws').Server;
 let Util = require('../utils');
