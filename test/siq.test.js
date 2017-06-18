@@ -12,10 +12,15 @@ chai.use(chaiHttp);
 
 describe('client', () => {
 	
+	var siqConnection = Siq.connect('ws://localhost:' + nconf.get('ws:port'));
 
-	before((done) => {
-		//clean up all the code
-		done();
+	after((done) => {
+		siqConnection.then((siq) => {
+			siq.disconnect();
+			DB.deleteQueue('q1', () => {
+				done();
+			});
+		});
 	});
 
 	describe('connect', () => {
@@ -37,14 +42,12 @@ describe('client', () => {
 		});
 
 		it("should connect to siq", () => {
-			var siqConnection = Siq.connect('ws://localhost:' + nconf.get('ws:port'));
 			siqConnection.then((siq) => {
 				expect(siq).to.have.property('url');
 				expect(siq).to.have.property('put');
 				expect(siq).to.have.property('get');
 				expect(siq).to.have.property('error');
 				assert.isNull(siq.error, "error should be null");	
-				siq.disconnect();
 			});
 		});
 	});
@@ -82,7 +85,7 @@ describe('client', () => {
 				done();	
 			})
 
-		})
+		});
 
 		it("should block if queue is full", (done) => {
 			siqConnection.then((siq) => {
@@ -156,4 +159,27 @@ describe('client', () => {
 			})
 		});
 	});
+
+	describe("queues", () => {
+		var siqConnection;
+
+		before(() => {
+			siqConnection = Siq.connect('ws://localhost:' + nconf.get('ws:port'));
+		});
+
+		after(() => {
+			siqConnection.then((siq) => {
+				siq.disconnect();
+			});
+		});
+
+		it("should be able to create queue of custom length", (done) => {
+			siqConnection.then((siq) => {
+				siq.createQueue('newQueue', 20, (name) => {
+					assert.equal(name, 'newQueue');
+					done();
+				});
+			});
+		});
+	})
 })

@@ -5,6 +5,7 @@ var Consumer = require('./consumer');
 
 var isNullOrEmpty = Utils.isNullOrEmpty;
 var logger = Utils.logger;
+var serialize = Utils.serialize;
 
 var Siq = (function(){
 	var self = this;
@@ -45,6 +46,22 @@ var SiqConnection = function(url){
 		error: null,
 		disconnect: function(){
 			connection.close();
+		},
+		createQueue: function(name, bufferSize, callback){
+			var payload = {
+				topic: 'CREATE_QUEUE',
+				queue: name,
+				bufferSize: bufferSize
+			};
+			connection.send(serialize(payload));
+			connection.on('message', (data) => {
+				data = JSON.parse(data);
+				if(data.topic === "CREATE_QUEUE_ACK"){
+					if(typeof callback === "function"){
+						callback(data.queue);
+					}
+				}
+			});
 		}
 	}
 
@@ -56,6 +73,8 @@ var SiqConnection = function(url){
 		connection.on('error', (error) => {
 			reject(error);
 		});
+
+
 	});
 	
 

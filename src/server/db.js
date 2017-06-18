@@ -4,23 +4,37 @@ var Utils = require('../utils');
 var logger = Utils.logger;
 var db = new sqlite3.Database("./siq_persist");
 
+function _init(){
+	db.run("CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, queue TEXT, message TEXT);", [], (err) => {
+			if(err !== null){
+				logger.error(err);
+			}
+			db.run("CREATE TABLE IF NOT EXISTS queues (name TEXT PRIMARY KEY, bufferSize INT);", [], (err) => {
+				if(err !== null)
+					logger.error(err);
+			});
+	});
+};
+
+_init();
+
 var Db = (function(){
 	var self = this;
 	this.initialized = false;
 
-	function _init(callback){
-		db.run("CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, queue TEXT, message TEXT);", [], (err) => {
-			if(typeof callback === "function"){
-				if(err == null){
-					self.initialized = true;
-				}
-				callback(err);
+	function _selectAll(callback){
+		db.all("SELECT * FROM messages;", [], (err, rows) => {
+			if(err != null){
+				logger.error(err);
+			}
+			else{
+				callback(err, rows);
 			}
 		});
 	};
 
-	function _selectAll(callback){
-		db.all("SELECT * FROM messages;", [], (err, rows) => {
+	function _selectAllQueues(callback){
+		db.all("SELECT * FROM queues;", [], (err, rows) => {
 			if(err != null){
 				logger.error(err);
 			}
@@ -73,14 +87,69 @@ var Db = (function(){
 		});
 	};
 
+	function _purge(callback){
+		var stmt = "DELETE FROM messages;";
+		db.run(stmt, [], (err) => {
+			if(err != null){
+				logger.error(err);
+			}
+			callback(err);
+		});
+	};
+
+	function _deleteMessage(id, qName, callback){
+		var stmt = "DELETE FROM messages where id=\'" + id + "\' and queue=\'" + qName + "\';";
+		db.run(stmt, [], (err) => {
+			if(err != null){
+				logger.error(err);
+			}
+			if(typeof callback === "function")
+				callback(err);
+		});
+	};
+
+	function _createQueue(name, bufferSize, callback){
+		var stmt = "INSERT INTO queues values (\'" + name + "\',\'" + bufferSize + "\')";
+		db.run(stmt, [], (err) => {
+			if(err !== null)
+				logger.error(err);
+			
+			if(typeof callback === "function")
+				callback(err);
+		});
+	};
+
+	function _deleteQueue(name, callback){
+		var stmt = "DELETE FROM queues where name=\'" + name + "\'";
+		db.run(stmt, [], (err) => {
+			if(err !== null){
+				logger.error(err);
+			}
+			else{
+				var stmt = "DELETE FROM messages where queue=\'" + name + "\'";
+				db.run(stmt, [], (err) => {
+					if(err !== null)
+						logger.error(err);
+					if(typeof callback === "function")
+						callback(err);
+				});
+			}
+		});
+	};
+
 	return {
 		init: _init,
-		selectAll: _selectAll,
+		selectAllMessages: _selectAll,
+		selectAllQueues: _selectAllQueues,
 		insertMessage: _insertMessage,
 		selectMessage: _selectMessage,
+		deleteMessage: _deleteMessage,
 		initialized: this.initialized,
 		selectAllFrom: _selectAllFrom,
-		deleteAllFrom: _deleteAllFrom
+		deleteAllFrom: _deleteAllFrom,
+		createQueue: _createQueue,
+		deleteQueue: _deleteQueue,
+		purge: _purge
 	}
 })();
 

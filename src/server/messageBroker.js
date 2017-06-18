@@ -20,7 +20,7 @@ qMap = {};
 var MessageBroker = (function(){
 	
 	function _getQFromName(name){
-		if(!isNullOrEmpty(qMap[name])){
+		if(qMap[name] !== undefined){
 			return qMap[name];
 		}
 		else
@@ -29,41 +29,49 @@ var MessageBroker = (function(){
 
 	function _createQueue(name, bufferSize=nconf.get("defaultBufferSize")){
 		logger.debug("Create new queue: " + name);
-		qMap[name] = new Queue(name, bufferSize);
+		if(qMap[name] === undefined)
+			qMap[name] = new Queue(name, bufferSize);
+		DB.createQueue(name, bufferSize);
 		return qMap[name];
 	};
 
-	function _loadPersisted(callback){
-		DB.selectAll((err, rows) => {
-			if(err !== null){
-				logger.error(err);
-			}
-			else{
-				rows.forEach((row) => {
-					var queue = _getQFromName(row.queue);
-					var payload = {
-						id: row.id,
-						message: row.message
-					};
-
-					queue.add(payload);
-				});
-				callback();
-			}
-		})
+	function _deleteQueue(name){
+		delete qMap[name];
+		DB.deleteQueue(name);
 	}
 
-	function _peristMessage(id, qName, message){
-		if(!DB.initialized){
-			DB.init((err) => {
-				if(err != null){
+	function _loadPersisted(callback){
+		DB.selectAllQueues((err, rows) => {
+			if(err !== null)
+				logger.error(err);
+
+			rows.forEach((row) => {
+				_createQueue(row.name, row.bufferSize)
+			});
+
+			DB.selectAllMessages((err, rows) => {
+				if(err !== null){
 					logger.error(err);
 				}
 				else{
-					DB.insertMessage(id, qName, message);
+					rows.forEach((row) => {
+						var queue = _getQFromName(row.queue);
+						var payload = {
+							id: row.id,
+							message: row.message
+						};
+
+						queue.add(payload);
+					});
+					callback();
 				}
-			})
-		}
+			});
+		});
+		
+	}
+
+	function _persistMessage(id, qName, message){
+		DB.insertMessage(id, qName, message);
 	};
 
 	return {
@@ -79,7 +87,7 @@ var MessageBroker = (function(){
 			
 
 			//control will reach here if queue.add does not throw any errors
-			_peristMessage(returnedId, qName, message);
+			_persistMessage(returnedId, qName, message);
 
 			return returnedId;
 			
@@ -100,7 +108,9 @@ var MessageBroker = (function(){
 			var queue = _getQFromName(qName);
 			queue.acknowledgeMessage(consumerId);
 		},
-		load: _loadPersisted
+		load: _loadPersisted,
+		createQueue: _createQueue,
+		deleteQueue: _deleteQueue
 	};
 
 })();

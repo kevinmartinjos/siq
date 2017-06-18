@@ -84,13 +84,18 @@ var Queue = function(name, bufferSize){
 	};
 
 	function _clear(){
-		self.data = [];
-		self.acks = [];
+		//make a copy
+		var toDelete = self.data.slice();
 
 		/*TODO: This DB call should be moved to MessageBroker.js*/
-		DB.deleteAllFrom(self.name, (err) => {
-			logger.error(err);
+		toDelete.forEach((messageJson) => {
+			var messageObject = JSON.parse(messageJson);
+			var id = messageObject.id;
+			DB.deleteMessage(id, self.name);
 		});
+
+		self.data = [];
+		self.acks = [];
 	}
 
 	function _acknowledgeMessage(consumerId){

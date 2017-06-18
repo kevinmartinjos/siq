@@ -94,6 +94,20 @@ function acknowledgeMessage(ws, data){
 	MessageBroker.acknowledgeMessage(data.queue, data.consumerId);
 };
 
+function createQueue(ws, data){
+	try{
+		var queue = MessageBroker.createQueue(data.queue, data.bufferSize);
+		var payload = {
+			topic: "CREATE_QUEUE_ACK",
+			queue: queue.name
+		};
+		ws.send(serialize(payload));
+	}
+	catch(e){
+		logger.error(e);
+	}
+
+}
 /*
 	Load persisted messages into the MessageBroker from the DB
 */
@@ -115,6 +129,9 @@ MessageBroker.load(() => {
 				/*Consumer acknowledging a queue flush*/
 				case 'MSG_ACK':
 					acknowledgeMessage(ws, data);
+					break;
+				case 'CREATE_QUEUE':
+					createQueue(ws, data);
 					break;
 			}
 		})
