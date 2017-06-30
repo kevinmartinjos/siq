@@ -1,6 +1,5 @@
 {
   "name": "siq",
-  "homepage": "http://lonesword.in/adwise-puzzle/",
   "version": "0.1.0",
   "private": true,
   "main": "server.js",
@@ -11,6 +10,7 @@
     "chai": "^3.5.0",
     "chai-http": "^2.0.1",
     "mocha": "^2.4.5",
+    "nodemon": "^1.11.0",
     "webpack": "^2.3.2"
   },
   "dependencies": {
@@ -26,6 +26,7 @@
   "scripts": {
     "nodemon": "^1.11.0",
     "start": "nodemon src/server/server.js ",
+    "debug": "node --inspect src/server/server.js",
     "test": "mocha test",
     "build": "webpack -d"
   }

@@ -13,6 +13,10 @@ function Producer(connection){
 	this.errCallbacks = {};
 	this.producerId = uuid();
 
+	/*
+		TODO:
+		Have a 'disconnect' event
+	*/
 	connection.on('message', (data) => {
 		data = JSON.parse(data);
 		if(data.topic === "ID"){
@@ -62,6 +66,10 @@ function Producer(connection){
 				errCallback: errCallback
 			};
 
+			/*
+				TODO:
+				Retry if not successful. Disconnect after a certain number of attempts
+			*/
 			connection.send(JSON.stringify(payload));
 		}
 

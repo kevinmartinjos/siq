@@ -1,3 +1,10 @@
+## Update
+Not all test cases pass now. Recent commits break the test. 
+
+#### ChangeLog:
+
+If a buffered queue is full, producers are now no longer throttled. SIQ creates a new instance of the queue in memory. When flushing, messages from all full instances of a queue are sent to each consumer
+
 ## SIQ
 #### Simple Queue
 A simple websocket queueing service written in javascript

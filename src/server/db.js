@@ -9,7 +9,7 @@ function _init(){
 			if(err !== null){
 				logger.error(err);
 			}
-			db.run("CREATE TABLE IF NOT EXISTS queues (name TEXT PRIMARY KEY, bufferSize INT);", [], (err) => {
+			db.run("CREATE TABLE IF NOT EXISTS queues (id TEXT PRIMARY KEY, name TEXT, bufferSize INT);", [], (err) => {
 				if(err !== null)
 					logger.error(err);
 			});
@@ -108,8 +108,8 @@ var Db = (function(){
 		});
 	};
 
-	function _createQueue(name, bufferSize, callback){
-		var stmt = "INSERT INTO queues values (\'" + name + "\',\'" + bufferSize + "\')";
+	function _createQueue(id, name, bufferSize, callback){
+		var stmt = "INSERT INTO queues values (\'" + id + "\',\'" + name + "\',\'" + bufferSize + "\')";
 		db.run(stmt, [], (err) => {
 			if(err !== null)
 				logger.error(err);

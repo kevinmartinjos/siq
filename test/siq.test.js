@@ -87,7 +87,27 @@ describe('client', () => {
 
 		});
 
-		it("should block if queue is full", (done) => {
+		// it("should block if queue is full", (done) => {
+		// 	siqConnection.then((siq) => {
+		// 		var producer = siq.createProducer();
+		// 		var id;
+
+		// 		//fill up a queue
+		// 		// -1 since we had already enqued a message in the previous test
+		// 		for(var i=0; i<nconf.get("defaultBufferSize") - 1; i++){
+		// 			producer.produce('q1', 'message');
+		// 		}
+
+		// 		var errCallback = (error) => {
+		// 			done();
+		// 		};
+
+		// 		//the last message would cause an overflow, and it would throw an error
+		// 		producer.produce('q1', 'overflow message', null, errCallback);
+		// 	});
+		// });
+
+		it("should create a new instance of queue if queue is full", (done) => {
 			siqConnection.then((siq) => {
 				var producer = siq.createProducer();
 				var id;
@@ -99,13 +119,17 @@ describe('client', () => {
 				}
 
 				var errCallback = (error) => {
+					assert.fail("Did not expect errCallback to execute", "errCallback executed", error);
+				};
+
+				var successCallback = (id) => {
+					assert.isNotNull(id);
 					done();
 				};
 
 				//the last message would cause an overflow, and it would throw an error
-				producer.produce('q1', 'overflow message', null, errCallback);
+				producer.produce('q1', 'overflow message', successCallback, errCallback);
 			});
-			
 		});
 	});
 
@@ -147,6 +171,32 @@ describe('client', () => {
 			
 		});
 
+		it("should flush all instances of the queue to the consumer(s)", (done) => {
+			var flushCount = 0;
+			var callback = (messageList) => {
+				flushCount++;
+				console.log("Flushing a queue of length: " + messageList.length);
+				messageList.forEach(function(messageItem, index){
+					messageItem = JSON.parse(messageItem);
+					console.log(messageItem.message);
+				});
+				if(flushCount === 3){
+					done();
+				}
+			};
+
+			siqConnection.then((siq) => {
+				var producer = siq.createProducer();
+
+				//would have created 4 instances of bufferedQueue, provided bufferSize is 5
+				for(var i=0; i<18; i++){
+					producer.produce('bufferedQueue', 'message');
+				}
+
+				var consumerConnection = siq.createConsumer('bufferedQueue', callback);
+			});
+		});
+
 		it("should have deleted the data in queue on flush", (done) => {
 			//if queue was flushed, we would be able to push more data into queue 'q1'
 			siqConnection.then((siq) => {
@@ -160,26 +210,26 @@ describe('client', () => {
 		});
 	});
 
-	describe("queues", () => {
-		var siqConnection;
+	// describe("queues", () => {
+	// 	var siqConnection;
 
-		before(() => {
-			siqConnection = Siq.connect('ws://localhost:' + nconf.get('ws:port'));
-		});
+	// 	before(() => {
+	// 		siqConnection = Siq.connect('ws://localhost:' + nconf.get('ws:port'));
+	// 	});
 
-		after(() => {
-			siqConnection.then((siq) => {
-				siq.disconnect();
-			});
-		});
+	// 	after(() => {
+	// 		siqConnection.then((siq) => {
+	// 			siq.disconnect();
+	// 		});
+	// 	});
 
-		it("should be able to create queue of custom length", (done) => {
-			siqConnection.then((siq) => {
-				siq.createQueue('newQueue', 20, (name) => {
-					assert.equal(name, 'newQueue');
-					done();
-				});
-			});
-		});
-	})
+	// 	it("should be able to create queue of custom length", (done) => {
+	// 		siqConnection.then((siq) => {
+	// 			siq.createQueue('newQueue', 20, (name) => {
+	// 				assert.equal(name, 'newQueue');
+	// 				done();
+	// 			});
+	// 		});
+	// 	});
+	// })
 })

@@ -1,18 +1,22 @@
 let Utils = require('../utils');
 let DB = require('./db');
+let uuid = require('uuid/v4');
 
 var serialize = Utils.serialize;
 var isNullOrEmpty = Utils.isNullOrEmpty;
 var logger = Utils.logger;
 var Exception = Utils.Exception;
 
-var Queue = function(name, bufferSize){
+var Queue = function(name, bufferSize, id=uuid()){
 	this.name = name;
+	this.id = id;
 	this.bufferSize = bufferSize;
 	this.data = [];
 	this.subscribers = [];
 	//acknowledgements
 	this.acks = [];
+	this.isCleared = false;
+
 	var self = this;
 
 	function _add(payload){
@@ -96,6 +100,7 @@ var Queue = function(name, bufferSize){
 
 		self.data = [];
 		self.acks = [];
+		self.isCleared = true;
 	}
 
 	function _acknowledgeMessage(consumerId){
@@ -104,14 +109,22 @@ var Queue = function(name, bufferSize){
 			_clear();
 		}
 	}
+
+	function _isCleared(){
+		return self.isCleared;
+	}
+	
 	return {
 		name: this.name,
+		id: this.id,
 		bufferSize: this.bufferSize,
 		length: this.data.length,
 		add: _add,
 		getData: _getData,
 		subscribe: _subscribe,
-		acknowledgeMessage: _acknowledgeMessage
+		acknowledgeMessage: _acknowledgeMessage,
+		isFull: _isFull,
+		isCleared: _isCleared
 	}
 };
 

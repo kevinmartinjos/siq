@@ -16,5 +16,12 @@ siqConnection.then((siq) => {
 	};
 	
 	producer.produce('q1', 'message1', callback);
+	producer.produce('q1', 'message2', callback);
+	producer.produce('q1', 'message3', callback);
+	producer.produce('q1', 'message4', callback);
+	producer.produce('q1', 'message5', callback);
+	producer.produce('q1', 'message6', callback);
+	producer.produce('q1', 'message7', callback);
+	producer.produce('q1', 'message8', callback);
 	
 });

@@ -30,6 +30,11 @@ function Consumer(connection, qName, callback){
 		consumerId: this.consumerId
 	};
 
+	/*
+		TODO:
+		A heartbeat cheack (ping check) at regular intervals to see if the connection
+		is still alive
+	*/
 	return subscribe(connection, this.qName, this.consumerId, publicMembers);
 }
 
@@ -42,6 +47,11 @@ function subscribe(connection, qName, consumerId, publicMembers){
 
 	connection.send(serialize(payload));
 	return new Promise((resolve, reject) => {
+		/*
+			TODO:
+			Potential memory leak. Creating many consumers would result in many 'message' event
+			listeners on the same 'connection' object
+		*/
 		connection.on('message', (data) => {
 			data = JSON.parse(data);
 

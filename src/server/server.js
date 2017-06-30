@@ -1,6 +1,4 @@
 let http = require('http');
-let express = require('express');
-let app = express();
 let nconf = require('nconf');
 let WebSocketServer = require('ws').Server;
 let Util = require('../utils');
@@ -109,6 +107,14 @@ function createQueue(ws, data){
 }
 /*
 	Load persisted messages into the MessageBroker from the DB
+*/
+
+/*
+	TODO:
+
+	Dispatch 'disconnect' event on crash/close. Handle SIGTERM and SIGKILL events gracefully.
+	In case of an ungraceful shutdown, the regular ping checks should allow the consumers
+	to know if the server is alive
 */
 MessageBroker.load(() => {
 	wsServer.on('connection', (ws) => {
